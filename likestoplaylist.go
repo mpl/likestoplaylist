@@ -18,6 +18,7 @@ import (
 
 const (
 	idstring = "http://golang.org/pkg/http/#ListenAndServe"
+	apiURL = "https://api.soundcloud.com"
 )
 
 var (
@@ -82,6 +83,19 @@ func serveError(w http.ResponseWriter, response string, err error) {
 	w.Write([]byte(response))
 }
 
+func apiGet(url string) ([]byte, error) {
+	resp, err := http.Get(apiURL+url+"?oauth_token=" + oauthToken)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	authCode := r.FormValue("code")
 	if authCode == "" {
@@ -96,18 +110,22 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 	println("GOT TOKEN: " + tok)
 	oauthToken = tok
 
-	resp, err := http.Get("https://api.soundcloud.com/me?oauth_token=" + oauthToken)
+	body, err := apiGet("/me")
 	if err != nil {
 		serveError(w, "error getting me", fmt.Errorf("error getting me: %v", err))
 		return
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+
+	println(string(body))
+
+	body, err = apiGet("/me/favorites")
 	if err != nil {
-		serveError(w, "error reading me", fmt.Errorf("error reading me: %v", err))
+		serveError(w, "error getting my favorites", fmt.Errorf("error getting my favorites: %v", err))
 		return
 	}
-	println(string(body))
+
+//	println(string(body))
+	w.Write("ALL GOOD")
 }
 
 func main() {
