@@ -96,6 +96,115 @@ func apiGet(url string) ([]byte, error) {
 	return body, nil
 }
 
+type track struct {
+	Kind string
+	Id int64
+}
+
+func getFavorites() ([]track, error) {
+	tracks := make([]track, 1)
+	body, err := apiGet("/me/favorites")
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(body, &tracks); err != nil {
+		return nil, fmt.Errorf("could not decode %q: %v", body, err)
+	}
+	fmt.Printf("found %d tracks in favorites\n", len(tracks))
+	for _,v := range tracks {
+		if v.Kind != "track" {
+			// TODO(mpl): remove from list? error out?
+			fmt.Printf("but %#v is actually not a track\n", v)
+		}
+	}
+	return tracks, nil
+}
+
+/*
+type playlist struct {
+	Id int64
+	UserId int
+}
+
+{
+  "kind": "playlist",
+  "id": 405726,
+  "created_at": "2010/11/02 09:24:50 +0000",
+  "user_id": 3207,
+  "duration": 154516,
+  "sharing": "public",
+  "tag_list": "",
+  "permalink": "field-recordings",
+  "track_count": 5,
+  "streamable": true,
+  "downloadable": true,
+  "embeddable_by": "me",
+  "purchase_url": null,
+  "label_id": null,
+  "type": "other",
+  "playlist_type": "other",
+  "ean": "",
+  "description": "a couple of field recordings to test http://soundiverse.com.\r\n\r\nrecorded with the fire recorder: http://soundcloud.com/apps/fire",
+  "genre": "",
+  "release": "",
+  "purchase_title": null,
+  "label_name": "",
+  "title": "Field Recordings",
+  "release_year": null,
+  "release_month": null,
+  "release_day": null,
+  "license": "all-rights-reserved",
+  "uri": "http://api.soundcloud.com/playlists/405726",
+  "permalink_url": "http://soundcloud.com/jwagener/sets/field-recordings",
+  "artwork_url": "http://i1.sndcdn.com/artworks-000025801802-1msl1i-large.jpg?5e64f12",
+  "user": {
+    "id": 3207,
+    "kind": "user",
+    "permalink": "jwagener",
+    "username": "Johannes Wagener",
+    "uri": "http://api.soundcloud.com/users/3207",
+    "permalink_url": "http://soundcloud.com/jwagener",
+    "avatar_url": "http://i1.sndcdn.com/avatars-000014428549-3at7qc-large.jpg?5e64f12"
+  },
+  "tracks": [
+    {
+      "kind": "track",
+      "id": 6621631,
+      "created_at": "2010/11/02 09:08:43 +0000",
+      "user_id": 3207,
+      "duration": 27099,
+      "commentable": true,
+      "state": "finished",
+      "original_content_size": 2382624,
+      "sharing": "public",
+      "tag_list": "Fieldrecording geo:lat=52.527544 geo:lon=13.402905",
+      "permalink": "coffee-machine",
+      "streamable": true,
+      "embeddable_by": "all",
+      "downloadable": false,
+      "purchase_url": null,
+      "label_id": null,
+      "purchase_title": null,
+      "genre": "",
+      "title": "coffee machine",
+      "description": "",
+      "label_name": "",
+      "release": "",
+      "track_type": "",
+      "key_signature": "",
+      "isrc": "",
+      "video_url": null,
+      "bpm": null,
+      "release_year": null,
+      "release_month": null,
+      "release_day": null,
+      "original_format": "wav",
+
+func createNewPlaylist(likes []track) error {
+
+}
+*/
+
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	authCode := r.FormValue("code")
 	if authCode == "" {
@@ -118,14 +227,12 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	println(string(body))
 
-	body, err = apiGet("/me/favorites")
-	if err != nil {
-		serveError(w, "error getting my favorites", fmt.Errorf("error getting my favorites: %v", err))
+	if _, err := getFavorites(); err != nil {
+		serveError(w, "error getting favorites", fmt.Errorf("error getting favorites: %v", err))
 		return
 	}
 
-//	println(string(body))
-	w.Write("ALL GOOD")
+	w.Write([]byte("ALL GOOD"))
 }
 
 func main() {
